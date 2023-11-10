@@ -6,7 +6,6 @@
 
 use super::{Extension, FromRequestParts};
 use crate::{middleware::AddExtension, serve::IncomingStream};
-use async_trait::async_trait;
 use http::request::Parts;
 use std::{
     convert::Infallible,
@@ -127,7 +126,6 @@ opaque_future! {
 #[derive(Clone, Copy, Debug)]
 pub struct ConnectInfo<T>(pub T);
 
-#[async_trait]
 impl<S, T> FromRequestParts<S> for ConnectInfo<T>
 where
     S: Send + Sync,

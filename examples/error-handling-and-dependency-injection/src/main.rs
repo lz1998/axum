@@ -8,7 +8,6 @@
 //! ```
 
 use axum::{
-    async_trait,
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -17,6 +16,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::future::Future;
 use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
@@ -109,7 +109,6 @@ impl IntoResponse for AppError {
 /// Example implementation of `UserRepo`.
 struct ExampleUserRepo;
 
-#[async_trait]
 impl UserRepo for ExampleUserRepo {
     async fn find(&self, _user_id: Uuid) -> Result<User, UserRepoError> {
         unimplemented!()
@@ -124,13 +123,12 @@ impl UserRepo for ExampleUserRepo {
 type DynUserRepo = Arc<dyn UserRepo + Send + Sync>;
 
 /// A trait that defines things a user repo might support.
-#[async_trait]
 trait UserRepo {
     /// Loop up a user by their id.
-    async fn find(&self, user_id: Uuid) -> Result<User, UserRepoError>;
+    fn find(&self, user_id: Uuid) -> impl Future<Output = Result<User, UserRepoError>>;
 
     /// Create a new user.
-    async fn create(&self, params: CreateUser) -> Result<User, UserRepoError>;
+    fn create(&self, params: CreateUser) -> impl Future<Output = Result<User, UserRepoError>>;
 }
 
 #[derive(Debug, Serialize)]

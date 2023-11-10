@@ -4,7 +4,6 @@
 
 use super::{FromRequest, Request};
 use crate::body::Bytes;
-use async_trait::async_trait;
 use axum_core::__composite_rejection as composite_rejection;
 use axum_core::__define_rejection as define_rejection;
 use axum_core::body::Body;
@@ -63,7 +62,6 @@ pub struct Multipart {
     inner: multer::Multipart<'static>,
 }
 
-#[async_trait]
 impl<S> FromRequest<S> for Multipart
 where
     S: Send + Sync,

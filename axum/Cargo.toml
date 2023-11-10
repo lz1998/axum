@@ -31,7 +31,6 @@ ws = ["tokio", "dep:tokio-tungstenite", "dep:sha1", "dep:base64"]
 __private_docs = ["tower/full", "dep:tower-http"]
 
 [dependencies]
-async-trait = "0.1.67"
 axum-core = { path = "../axum-core", version = "0.3.4" }
 bytes = "1.0"
 futures-util = { version = "0.3", default-features = false, features = ["alloc"] }

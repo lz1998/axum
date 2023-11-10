@@ -8,7 +8,6 @@ use crate::{
     routing::url_params::UrlParams,
     util::PercentDecodedStr,
 };
-use async_trait::async_trait;
 use axum_core::response::{IntoResponse, Response};
 use http::{request::Parts, StatusCode};
 use serde::de::DeserializeOwned;
@@ -142,7 +141,6 @@ pub struct Path<T>(pub T);
 
 axum_core::__impl_deref!(Path);
 
-#[async_trait]
 impl<T, S> FromRequestParts<S> for Path<T>
 where
     T: DeserializeOwned + Send,
@@ -442,7 +440,6 @@ impl std::error::Error for FailedToDeserializePathParams {}
 #[derive(Debug)]
 pub struct RawPathParams(Vec<(Arc<str>, PercentDecodedStr)>);
 
-#[async_trait]
 impl<S> FromRequestParts<S> for RawPathParams
 where
     S: Send + Sync,
