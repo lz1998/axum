@@ -66,7 +66,7 @@ pub trait RequestExt: sealed::Sealed + Sized {
     ///     }
     /// }
     /// ```
-    fn extract<E, M>(self) -> impl Future<Output = Result<E, E::Rejection>>
+    fn extract<E, M>(self) -> impl Future<Output = Result<E, E::Rejection>> + Send
     where
         E: FromRequest<(), M> + 'static,
         M: 'static;
@@ -123,7 +123,7 @@ pub trait RequestExt: sealed::Sealed + Sized {
     fn extract_with_state<E, S, M>(
         self,
         state: &S,
-    ) -> impl Future<Output = Result<E, E::Rejection>>
+    ) -> impl Future<Output = Result<E, E::Rejection>> + Send
     where
         E: FromRequest<S, M> + 'static,
         S: Send + Sync;
@@ -176,7 +176,7 @@ pub trait RequestExt: sealed::Sealed + Sized {
     ///     }
     /// }
     /// ```
-    fn extract_parts<E>(&mut self) -> impl Future<Output = Result<E, E::Rejection>>
+    fn extract_parts<E>(&mut self) -> impl Future<Output = Result<E, E::Rejection>> + Send
     where
         E: FromRequestParts<()> + 'static;
 
@@ -244,7 +244,7 @@ pub trait RequestExt: sealed::Sealed + Sized {
     fn extract_parts_with_state<'a, E, S>(
         &'a mut self,
         state: &'a S,
-    ) -> impl Future<Output = Result<E, E::Rejection>> + 'a
+    ) -> impl Future<Output = Result<E, E::Rejection>> + Send + 'a
     where
         E: FromRequestParts<S> + 'static,
         S: Send + Sync;

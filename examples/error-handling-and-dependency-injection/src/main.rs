@@ -125,10 +125,13 @@ type DynUserRepo = Arc<dyn UserRepo + Send + Sync>;
 /// A trait that defines things a user repo might support.
 trait UserRepo {
     /// Loop up a user by their id.
-    fn find(&self, user_id: Uuid) -> impl Future<Output = Result<User, UserRepoError>>;
+    fn find(&self, user_id: Uuid) -> impl Future<Output = Result<User, UserRepoError>> + Send;
 
     /// Create a new user.
-    fn create(&self, params: CreateUser) -> impl Future<Output = Result<User, UserRepoError>>;
+    fn create(
+        &self,
+        params: CreateUser,
+    ) -> impl Future<Output = Result<User, UserRepoError>> + Send;
 }
 
 #[derive(Debug, Serialize)]
