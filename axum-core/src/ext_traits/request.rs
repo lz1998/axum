@@ -261,27 +261,30 @@ pub trait RequestExt: sealed::Sealed + Sized {
 }
 
 impl RequestExt for Request {
-    async fn extract<E, M>(self) -> Result<E, E::Rejection>
+    fn extract<E, M>(self) -> impl Future<Output = Result<E, E::Rejection>> + Send
     where
         E: FromRequest<(), M> + 'static,
         M: 'static,
     {
-        self.extract_with_state(&()).await
+        self.extract_with_state(&())
     }
 
-    async fn extract_with_state<E, S, M>(self, state: &S) -> Result<E, E::Rejection>
+    fn extract_with_state<E, S, M>(
+        self,
+        state: &S,
+    ) -> impl Future<Output = Result<E, E::Rejection>> + Send
     where
         E: FromRequest<S, M> + 'static,
         S: Send + Sync,
     {
-        E::from_request(self, state).await
+        E::from_request(self, state)
     }
 
-    async fn extract_parts<E>(&mut self) -> Result<E, E::Rejection>
+    fn extract_parts<E>(&mut self) -> impl Future<Output = Result<E, E::Rejection>> + Send
     where
         E: FromRequestParts<()> + 'static,
     {
-        self.extract_parts_with_state(&()).await
+        self.extract_parts_with_state(&())
     }
 
     async fn extract_parts_with_state<'a, E, S>(
