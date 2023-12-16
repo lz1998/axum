@@ -14,6 +14,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use futures_util::future::BoxFuture;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
@@ -109,12 +110,12 @@ impl IntoResponse for AppError {
 struct ExampleUserRepo;
 
 impl UserRepo for ExampleUserRepo {
-    async fn find(&self, _user_id: Uuid) -> Result<User, UserRepoError> {
-        unimplemented!()
+    fn find(&self, _user_id: Uuid) -> BoxFuture<Result<User, UserRepoError>> {
+        Box::pin(async { unimplemented!() })
     }
 
-    async fn create(&self, _params: CreateUser) -> Result<User, UserRepoError> {
-        unimplemented!()
+    fn create(&self, _params: CreateUser) -> BoxFuture<Result<User, UserRepoError>> {
+        Box::pin(async { unimplemented!() })
     }
 }
 
@@ -124,10 +125,10 @@ type DynUserRepo = Arc<dyn UserRepo + Send + Sync>;
 /// A trait that defines things a user repo might support.
 trait UserRepo {
     /// Loop up a user by their id.
-    async fn find(&self, user_id: Uuid) -> Result<User, UserRepoError>;
+    fn find(&self, user_id: Uuid) -> BoxFuture<Result<User, UserRepoError>>;
 
     /// Create a new user.
-    async fn create(&self, params: CreateUser) -> Result<User, UserRepoError>;
+    fn create(&self, params: CreateUser) -> BoxFuture<Result<User, UserRepoError>>;
 }
 
 #[derive(Debug, Serialize)]
