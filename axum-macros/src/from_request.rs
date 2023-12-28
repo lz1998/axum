@@ -818,7 +818,7 @@ fn impl_struct_by_extracting_all_at_once(
                         req: ::axum::http::Request<::axum::body::Body>,
                         state: &#state,
                     ) -> ::std::result::Result<Self, Self::Rejection> {
-                        ::axum::extract::FromRequest::from_request(req, state)
+                        <#via_path<#via_type_generics> as ::axum::extract::FromRequest<#trait_generics>>::from_request(req, state)
                             .await
                             .map(|#via_path(value)| #value_to_self)
                             .map_err(#map_err)
@@ -841,7 +841,7 @@ fn impl_struct_by_extracting_all_at_once(
                         parts: &mut ::axum::http::request::Parts,
                         state: &#state,
                     ) -> ::std::result::Result<Self, Self::Rejection> {
-                        ::axum::extract::FromRequestParts::from_request_parts(parts, state)
+                        <#via_path<#via_type_generics> as ::axum::extract::FromRequestParts<#trait_generics>>::from_request_parts(parts, state)
                             .await
                             .map(|#via_path(value)| #value_to_self)
                             .map_err(#map_err)
