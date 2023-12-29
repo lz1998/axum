@@ -456,7 +456,7 @@ fn extract_fields(
         if let Some((_, path)) = via {
             let span = path.span();
             quote_spanned! {span=>
-                #path<#field_ty>
+                #path::<#field_ty>
             }
         } else {
             quote_spanned! {ty_span=>
@@ -519,7 +519,7 @@ fn extract_fields(
                 };
                 Ok(tokens)
             } else if peel_result_ok(&field.ty).is_some() {
-                let field_ty = into_outer(&via,ty_span,peel_result_ok(&field.ty).unwrap());
+                let field_ty = into_outer(&via,ty_span, peel_result_ok(&field.ty).unwrap());
                 let tokens = match tr {
                     Trait::FromRequest => {
                         quote_spanned! {ty_span=>
@@ -605,18 +605,20 @@ fn extract_fields(
         let into_inner = into_inner(&via, ty_span);
 
         let item = if peel_option(&field.ty).is_some() {
+            let field_ty = into_outer(&via, ty_span, peel_option(&field.ty).unwrap());
             quote_spanned! {ty_span=>
                 #member: {
-                    ::axum::extract::FromRequest::from_request(req, state)
+                    #field_ty::from_request(req, state)
                         .await
                         .ok()
                         .map(#into_inner)
                 },
             }
         } else if peel_result_ok(&field.ty).is_some() {
+            let field_ty = into_outer(&via, ty_span, peel_result_ok(&field.ty).unwrap());
             quote_spanned! {ty_span=>
                 #member: {
-                    ::axum::extract::FromRequest::from_request(req, state)
+                    #field_ty::from_request(req, state)
                         .await
                         .map(#into_inner)
                 },
