@@ -456,7 +456,7 @@ fn extract_fields(
         if let Some((_, path)) = via {
             let span = path.span();
             quote_spanned! {span=>
-                #path::<#field_ty>
+                #path<#field_ty>
             }
         } else {
             quote_spanned! {ty_span=>
@@ -608,7 +608,7 @@ fn extract_fields(
             let field_ty = into_outer(&via, ty_span, peel_option(&field.ty).unwrap());
             quote_spanned! {ty_span=>
                 #member: {
-                    #field_ty::from_request(req, state)
+                    <#field_ty as ::axum::extract::FromRequest<#trait_generics>>::from_request(req, state)
                         .await
                         .ok()
                         .map(#into_inner)
@@ -618,7 +618,7 @@ fn extract_fields(
             let field_ty = into_outer(&via, ty_span, peel_result_ok(&field.ty).unwrap());
             quote_spanned! {ty_span=>
                 #member: {
-                    #field_ty::from_request(req, state)
+                    <#field_ty as ::axum::extract::FromRequest<#trait_generics>>::from_request(req, state)
                         .await
                         .map(#into_inner)
                 },
@@ -633,7 +633,7 @@ fn extract_fields(
 
             quote_spanned! {ty_span=>
                 #member: {
-                    #field_ty::from_request(req, state)
+                    <#field_ty as ::axum::extract::FromRequest<#trait_generics>>::from_request(req, state)
                         .await
                         .map(#into_inner)
                         .map_err(#map_err)?
@@ -952,7 +952,7 @@ fn impl_enum_by_extracting_all_at_once(
                         req: ::axum::http::Request<::axum::body::Body>,
                         state: &#state,
                     ) -> ::std::result::Result<Self, Self::Rejection> {
-                        #path::<#ident>::from_request(req, state)
+                        <#path::<#ident> as ::axum::extract::FromRequest<#trait_generics>>::from_request(req, state)
                             .await
                             .map(|#path(inner)| inner)
                             .map_err(#map_err)
@@ -973,7 +973,7 @@ fn impl_enum_by_extracting_all_at_once(
                         parts: &mut ::axum::http::request::Parts,
                         state: &#state,
                     ) -> ::std::result::Result<Self, Self::Rejection> {
-                        #path::<#ident>::from_request_parts(parts, state)
+                        <#path::<#ident> as FromRequestParts<#trait_generics>>::from_request_parts(parts, state)
                             .await
                             .map(|#path(inner)| inner)
                             .map_err(#map_err)
