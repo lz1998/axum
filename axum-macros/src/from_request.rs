@@ -950,7 +950,7 @@ fn impl_enum_by_extracting_all_at_once(
                         req: ::axum::http::Request<::axum::body::Body>,
                         state: &#state,
                     ) -> ::std::result::Result<Self, Self::Rejection> {
-                        ::axum::extract::FromRequest::from_request(req, state)
+                        #path::<#ident>::from_request(req, state)
                             .await
                             .map(|#path(inner)| inner)
                             .map_err(#map_err)
@@ -971,7 +971,7 @@ fn impl_enum_by_extracting_all_at_once(
                         parts: &mut ::axum::http::request::Parts,
                         state: &#state,
                     ) -> ::std::result::Result<Self, Self::Rejection> {
-                        ::axum::extract::FromRequestParts::from_request_parts(parts, state)
+                        #path::<#ident>::from_request_parts(parts, state)
                             .await
                             .map(|#path(inner)| inner)
                             .map_err(#map_err)
