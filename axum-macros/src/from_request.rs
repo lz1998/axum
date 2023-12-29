@@ -6,6 +6,7 @@ use crate::{
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens};
 use std::{collections::HashSet, fmt, iter};
+use syn::token::Comma;
 use syn::{
     parse_quote, punctuated::Punctuated, spanned::Spanned, Fields, Ident, Path, Token, Type,
 };
@@ -339,12 +340,16 @@ fn impl_struct_by_extracting_each_field(
     state: &State,
     tr: Trait,
 ) -> syn::Result<TokenStream> {
+    let trait_generics = state
+        .trait_generics()
+        .collect::<Punctuated<Type, Token![,]>>();
+
     let trait_fn_body = match state {
         State::CannotInfer => quote! {
             ::std::unimplemented!()
         },
         _ => {
-            let extract_fields = extract_fields(&fields, &rejection, tr)?;
+            let extract_fields = extract_fields(&fields, &rejection, tr, &trait_generics)?;
             quote! {
                 ::std::result::Result::Ok(Self {
                     #(#extract_fields)*
@@ -363,10 +368,6 @@ fn impl_struct_by_extracting_each_field(
 
     let impl_generics = state
         .impl_generics()
-        .collect::<Punctuated<Type, Token![,]>>();
-
-    let trait_generics = state
-        .trait_generics()
         .collect::<Punctuated<Type, Token![,]>>();
 
     let state_bounds = state.bounds();
@@ -419,6 +420,7 @@ fn extract_fields(
     fields: &syn::Fields,
     rejection: &Option<syn::Path>,
     tr: Trait,
+    trait_generics: &Punctuated<Type, Comma>,
 ) -> syn::Result<Vec<TokenStream>> {
     fn member(field: &syn::Field, index: usize) -> TokenStream {
         match &field.ident {
@@ -433,7 +435,7 @@ fn extract_fields(
         }
     }
 
-    fn into_inner(via: Option<(attr::kw::via, syn::Path)>, ty_span: Span) -> TokenStream {
+    fn into_inner(via: &Option<(attr::kw::via, syn::Path)>, ty_span: Span) -> TokenStream {
         if let Some((_, path)) = via {
             let span = path.span();
             quote_spanned! {span=>
@@ -442,6 +444,23 @@ fn extract_fields(
         } else {
             quote_spanned! {ty_span=>
                 ::std::convert::identity
+            }
+        }
+    }
+
+    fn into_outer(
+        via: &Option<(attr::kw::via, syn::Path)>,
+        ty_span: Span,
+        field_ty: &Type,
+    ) -> TokenStream {
+        if let Some((_, path)) = via {
+            let span = path.span();
+            quote_spanned! {span=>
+                #path<#field_ty>
+            }
+        } else {
+            quote_spanned! {ty_span=>
+                #field_ty
             }
         }
     }
@@ -462,16 +481,17 @@ fn extract_fields(
 
             let member = member(field, index);
             let ty_span = field.ty.span();
-            let into_inner = into_inner(via, ty_span);
+            let into_inner = into_inner(&via, ty_span);
 
             if peel_option(&field.ty).is_some() {
+                let field_ty = into_outer(&via, ty_span, peel_option(&field.ty).unwrap());
                 let tokens = match tr {
                     Trait::FromRequest => {
                         quote_spanned! {ty_span=>
                             #member: {
                                 let (mut parts, body) = req.into_parts();
                                 let value =
-                                    ::axum::extract::FromRequestParts::from_request_parts(
+                                    <#field_ty as ::axum::extract::FromRequestParts<#trait_generics>>::from_request_parts(
                                         &mut parts,
                                         state,
                                     )
@@ -486,7 +506,7 @@ fn extract_fields(
                     Trait::FromRequestParts => {
                         quote_spanned! {ty_span=>
                             #member: {
-                                ::axum::extract::FromRequestParts::from_request_parts(
+                                <#field_ty as ::axum::extract::FromRequestParts<#trait_generics>>::from_request_parts(
                                     parts,
                                     state,
                                 )
@@ -499,13 +519,14 @@ fn extract_fields(
                 };
                 Ok(tokens)
             } else if peel_result_ok(&field.ty).is_some() {
+                let field_ty = into_outer(&via,ty_span,peel_result_ok(&field.ty).unwrap());
                 let tokens = match tr {
                     Trait::FromRequest => {
                         quote_spanned! {ty_span=>
                             #member: {
                                 let (mut parts, body) = req.into_parts();
                                 let value =
-                                    ::axum::extract::FromRequestParts::from_request_parts(
+                                    <#field_ty as ::axum::extract::FromRequestParts<#trait_generics>>::from_request_parts(
                                         &mut parts,
                                         state,
                                     )
@@ -519,7 +540,7 @@ fn extract_fields(
                     Trait::FromRequestParts => {
                         quote_spanned! {ty_span=>
                             #member: {
-                                ::axum::extract::FromRequestParts::from_request_parts(
+                                <#field_ty as ::axum::extract::FromRequestParts<#trait_generics>>::from_request_parts(
                                     parts,
                                     state,
                                 )
@@ -531,6 +552,7 @@ fn extract_fields(
                 };
                 Ok(tokens)
             } else {
+                let field_ty = into_outer(&via,ty_span,&field.ty);
                 let map_err = if let Some(rejection) = rejection {
                     quote! { <#rejection as ::std::convert::From<_>>::from }
                 } else {
@@ -543,7 +565,7 @@ fn extract_fields(
                             #member: {
                                 let (mut parts, body) = req.into_parts();
                                 let value =
-                                    ::axum::extract::FromRequestParts::from_request_parts(
+                                    <#field_ty as ::axum::extract::FromRequestParts<#trait_generics>>::from_request_parts(
                                         &mut parts,
                                         state,
                                     )
@@ -558,7 +580,7 @@ fn extract_fields(
                     Trait::FromRequestParts => {
                         quote_spanned! {ty_span=>
                             #member: {
-                                ::axum::extract::FromRequestParts::from_request_parts(
+                                <#field_ty as ::axum::extract::FromRequestParts<#trait_generics>>::from_request_parts(
                                     parts,
                                     state,
                                 )
@@ -580,7 +602,7 @@ fn extract_fields(
 
         let member = member(field, fields.len() - 1);
         let ty_span = field.ty.span();
-        let into_inner = into_inner(via, ty_span);
+        let into_inner = into_inner(&via, ty_span);
 
         let item = if peel_option(&field.ty).is_some() {
             quote_spanned! {ty_span=>
