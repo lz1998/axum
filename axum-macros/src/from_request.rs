@@ -622,6 +622,7 @@ fn extract_fields(
                 },
             }
         } else {
+            let field_ty = into_outer(&via, ty_span, &field.ty);
             let map_err = if let Some(rejection) = rejection {
                 quote! { <#rejection as ::std::convert::From<_>>::from }
             } else {
@@ -630,7 +631,7 @@ fn extract_fields(
 
             quote_spanned! {ty_span=>
                 #member: {
-                    ::axum::extract::FromRequest::from_request(req, state)
+                    <#field_ty as ::axum::extract::FromRequest<#trait_generics>>::from_request(req, state)
                         .await
                         .map(#into_inner)
                         .map_err(#map_err)?
